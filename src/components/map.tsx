@@ -1,61 +1,64 @@
-import React, { Component } from 'react';
-import ReactMapGL, { NavigationControl, ViewState } from 'react-map-gl';
+import React, { FC, useState, useEffect } from 'react';
+import ReactMapGL, {
+  NavigationControl,
+  ViewState,
+  GeolocateControl,
+} from 'react-map-gl';
+
+import { WindowSizeState } from '../models';
 
 const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || '';
-
-interface State {
-  viewport: ViewState;
-  height: number;
-  width: number;
-}
-
-const initialState: State = {
-  viewport: {
-    latitude: 37.776021,
-    longitude: -122.4171949,
-    zoom: 14,
-  },
-  height: 400,
-  width: 400,
+const viewportState: ViewState = {
+  latitude: 37.776021,
+  longitude: -122.4171949,
+  zoom: 14,
+};
+const windowSizeState: WindowSizeState = {
+  width: window.outerWidth,
+  height: window.outerHeight,
 };
 
-export default class Map extends Component<{}, State> {
-  public state: State = initialState;
+const Map: FC = () => {
+  const [windowSize, setWindowSize] = useState(windowSizeState);
+  const [viewport, setViewport] = useState(viewportState);
+  const setResizeState = (): void =>
+    setWindowSize({ height: window.innerHeight, width: window.innerWidth });
+  const followResize = (): void =>
+    window.addEventListener<'resize'>('resize', setResizeState);
+  const unfollowResize = (): void =>
+    window.removeEventListener<'resize'>('resize', setResizeState);
+  const updateViewport = (viewport: ViewState): void => setViewport(viewport);
 
-  public componentDidMount(): void {
-    window.addEventListener('resize', this.resize);
-    this.resize();
-  }
+  useEffect(() => {
+    followResize();
 
-  public componentWillUnmount(): void {
-    window.removeEventListener('resize', this.resize);
-  }
+    return unfollowResize();
+  });
 
-  public updateViewport = (viewport: ViewState) => {
-    this.setState(prevState => ({
-      viewport: { ...prevState.viewport, ...viewport },
-    }));
-  };
+  return (
+    <ReactMapGL
+      {...windowSize}
+      {...viewport}
+      mapboxApiAccessToken={MAPBOX_TOKEN}
+      onViewportChange={updateViewport}
+      style={{
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        zIndex: -1,
+      }}
+    >
+      <GeolocateControl
+        positionOptions={{ enableHighAccuracy: true }}
+        trackUserLocation={true}
+        showUserLocation={true}
+        onViewportChange={updateViewport}
+      />
+      <div style={{ position: 'absolute', right: 30, bottom: 30 }}>
+        <NavigationControl onViewportChange={updateViewport} />
+      </div>
+    </ReactMapGL>
+  );
+};
 
-  public resize = () => {
-    this.setState(prevState => ({
-      ...prevState,
-      height: window.innerHeight,
-      width: window.innerWidth,
-    }));
-  };
-
-  public render(): any {
-    return (
-      <ReactMapGL
-        {...this.state}
-        mapboxApiAccessToken={MAPBOX_TOKEN}
-        onViewportChange={(v: ViewState) => this.updateViewport(v)}
-      >
-        <div style={{ position: 'absolute', right: 30, bottom: 30 }}>
-          <NavigationControl onViewportChange={this.updateViewport} />
-        </div>
-      </ReactMapGL>
-    );
-  }
-}
+export default Map;

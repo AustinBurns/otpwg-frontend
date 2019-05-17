@@ -7,13 +7,12 @@ const Search: FC = () => {
     <div className="search-params">
       <form>
         <label htmlFor="location">location</label>
-        <h1>{location}</h1>
         <input
           id="location"
-          value={location}
+          defaultValue={location}
           placeholder="location"
           onInput={(e: ChangeEvent<HTMLInputElement>) =>
-            setLocation(e.currentTarget.value)
+            setLocation(e.target.value)
           }
         />
         <button>Submit</button>
